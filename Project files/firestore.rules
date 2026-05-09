@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isLoggedIn() && request.auth.uid == uid;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isLoggedIn() && getUserData().role == 'admin';
+    }
+
+    match /users/{userId} {
+      allow read: if isLoggedIn();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /equipment/{equipId} {
+      allow read: if true;
+      allow create: if isLoggedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isLoggedIn()
+        && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isLoggedIn()
+        && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isLoggedIn()
+        && (resource.data.renterId == request.auth.uid
+          || resource.data.ownerId == request.auth.uid
+          || isAdmin());
+      allow create: if isLoggedIn()
+        && request.resource.data.renterId == request.auth.uid;
+      allow update: if isLoggedIn()
+        && (resource.data.ownerId == request.auth.uid
+          || resource.data.renterId == request.auth.uid
+          || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+  }
+}
