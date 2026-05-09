@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel – AgroShare</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    body { padding-top: var(--navbar-height); background: var(--bg-main); }
+
+    .admin-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - var(--navbar-height)); }
+
+    /* SIDEBAR */
+    .admin-sidebar {
+      background: var(--bg-sidebar); border-right: 1px solid var(--border);
+      padding: 1.5rem 0; position: sticky;
+      top: var(--navbar-height); height: calc(100vh - var(--navbar-height));
+      overflow-y: auto;
+    }
+    .sidebar-section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 0 1.25rem; margin: 1rem 0 0.4rem; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 10px 1.25rem; font-size: 0.88rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: var(--transition-fast); border-left: 3px solid transparent; text-decoration: none; }
+    .sidebar-link:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .sidebar-link.active { background: var(--primary-light); border-left-color: var(--primary); color: var(--primary-dark); font-weight: 700; }
+    [data-theme="dark"] .sidebar-link.active { background: rgba(22,163,74,0.12); color: #4ade80; }
+    .sidebar-link i { width: 18px; text-align: center; }
+    .sidebar-badge { margin-left: auto; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-full); background: var(--primary); color: white; min-width: 20px; text-align: center; }
+
+    /* MAIN */
+    .admin-main { padding: 2rem; overflow-x: hidden; }
+
+    /* PAGE HEADER */
+    .admin-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .admin-page-title  { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+    .admin-page-sub    { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* STAT CARDS */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+    .stat-card  { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-xl); padding: 1.5rem; display: flex; align-items: center; gap: 1rem; transition: var(--transition); }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .stat-icon  { width: 54px; height: 54px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+    .stat-icon.users    { background: #e0f2fe; }
+    .stat-icon.equip    { background: #dcfce7; }
+    .stat-icon.bookings { background: #fef9c3; }
+    [data-theme="dark"] .stat-icon.users    { background: rgba(14,165,233,0.15); }
+    [data-theme="dark"] .stat-icon.equip    { background: rgba(22,163,74,0.15); }
+    [data-theme="dark"] .stat-icon.bookings { background: rgba(234,179,8,0.15); }
+    .stat-value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+    .stat-label { font-size: 0.82rem; color: var(--text-muted); font-weight: 500; margin-top: 4px; }
+
+    /* CHART */
+    .chart-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-xl); overflow: hidden; margin-bottom: 2rem; }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 0.75rem; }
+    .chart-title  { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+    .chart-title i { color: var(--primary); }
+    .chart-filter-btn { padding: 5px 12px; border-radius: var(--radius-full); border: 1.5px solid var(--border); background: var(--bg-input); font-size: 0.76rem; font-weight: 600; cursor: pointer; color: var(--text-muted); font-family: var(--font); transition: var(--transition-fast); }
+    .chart-filter-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+    [data-theme="dark"] .chart-filter-btn.active { background: rgba(22,163,74,0.15); color: #4ade80; }
+    .chart-body { padding: 1.5rem; }
+
+    /* USER CELL */
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-avatar-sm { width: 34px; height: 34px; border-radius: var(--radius-full); background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+    .user-name-sm   { font-weight: 600; font-size: 0.87rem; color: var(--text-primary); }
+
+    /* ACTION BUTTONS */
+    .action-btns { display: flex; gap: 6px; align-items: center; }
+    .action-btn  { width: 30px; height: 30px; border-radius: var(--radius-md); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; transition: var(--transition-fast); }
+    .action-btn.view   { background: #e0f2fe; color: #0284c7; }
+    .action-btn.edit   { background: #fef9c3; color: #ca8a04; }
+    .action-btn.delete { background: #fee2e2; color: #dc2626; }
+    .action-btn:hover  { opacity: 0.75; transform: scale(1.1); }
+
+    /* MINI MODAL */
+    .mini-modal { position: fixed; inset: 0; background: var(--bg-overlay); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .mini-modal.open { opacity: 1; pointer-events: all; }
+    .mini-modal-box { background: var(--bg-card); border-radius: var(--radius-xl); padding: 2rem; max-width: 380px; width: 100%; text-align: center; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.3s; }
+    .mini-modal.open .mini-modal-box { transform: scale(1); }
+
+    /* SEARCH */
+    .search-wrap { position: relative; display: flex; align-items: center; }
+    .search-wrap i { position: absolute; left: 10px; color: var(--text-muted); font-size: 0.8rem; pointer-events: none; }
+    .table-search { padding: 6px 14px 6px 34px; border: 1.5px solid var(--border); border-radius: var(--radius-full); background: var(--bg-input); font-size: 0.82rem; color: var(--text-primary); font-family: var(--font); width: 180px; transition: var(--transition-fast); }
+    .table-search:focus { border-color: var(--primary); outline: none; width: 220px; }
+
+    /* MOBILE */
+    .sidebar-toggle { display: none; position: fixed; bottom: 1.5rem; right: 1.5rem; width: 50px; height: 50px; border-radius: var(--radius-full); background: var(--gradient-primary); color: white; border: none; cursor: pointer; font-size: 1.2rem; z-index: 900; box-shadow: var(--shadow-lg); }
+
+    @media (max-width: 1024px) {
+      .admin-layout { grid-template-columns: 1fr; }
+      .admin-sidebar { display: none; position: fixed; top: var(--navbar-height); left: 0; bottom: 0; z-index: 800; width: 240px; box-shadow: var(--shadow-lg); }
+      .admin-sidebar.open { display: block; }
+      .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .admin-main { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE LOADER -->
+  <div class="page-loader" id="pageLoader"><div class="loader-spinner"></div></div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- DELETE MODAL -->
+  <div class="mini-modal" id="deleteModal">
+    <div class="mini-modal-box">
+      <div style="font-size:3rem;margin-bottom:1rem">🗑️</div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Delete Record?</div>
+      <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:1.5rem;line-height:1.6">This action cannot be undone. Are you sure?</p>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-block" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn btn-danger btn-block" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="navbar-logo"><span>🌾</span> AgroShare</a>
+    <ul class="navbar-links">
+      <li><a href="index.html">Home</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="marketplace.html">Marketplace</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="owner-dashboard.html">Dashboard</a></li>
+      <li><a href="admin.html" class="active">Admin</a></li>
+    </ul>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle"><i class="fa fa-moon" id="themeIcon"></i></button>
+      <button class="btn btn-ghost btn-sm" id="navLogoutBtn" style="display:none">
+        <i class="fa fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- ADMIN LAYOUT -->
+  <div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div style="padding:0 1.25rem 1rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
+        <div style="font-size:0.78rem;color:var(--text-muted);font-weight:500">Logged in as</div>
+        <div style="font-weight:700;font-size:0.92rem;color:var(--text-primary)" id="adminName">Admin</div>
+        <span class="badge badge-success" style="font-size:0.7rem;margin-top:4px">Super Admin</span>
+      </div>
+
+      <div class="sidebar-section-label">Overview</div>
+      <div class="sidebar-link active" onclick="switchAdminTab('overview',this)"><i class="fa fa-tachometer-alt"></i> Dashboard</div>
+
+      <div class="sidebar-section-label">Manage</div>
+      <div class="sidebar-link" onclick="switchAdminTab('users',this)">
+        <i class="fa fa-users"></i> Users <span class="sidebar-badge" id="sidebarUserCount">0</span>
+      </div>
+      <div class="sidebar-link" onclick="switchAdminTab('equipment',this)">
+        <i class="fa fa-tractor"></i> Equipment <span class="sidebar-badge" id="sidebarEquipCount">0</span>
+      </div>
+      <div class="sidebar-link" onclick="switchAdminTab('bookings',this)">
+        <i class="fa fa-calendar-alt"></i> Bookings <span class="sidebar-badge" id="sidebarBookingCount">0</span>
+      </div>
+
+      <div class="sidebar-section-label">System</div>
+      <a href="owner-dashboard.html" class="sidebar-link"><i class="fa fa-arrow-left"></i> Back to Dashboard</a>
+      <a href="index.html" class="sidebar-link"><i class="fa fa-home"></i> Go to Home</a>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="admin-main">
+
+      <!-- ══ OVERVIEW ══ -->
+      <div id="tab-overview">
+        <div class="admin-page-header fade-up">
+          <div>
+            <div class="admin-page-title">📊 Admin Dashboard</div>
+            <div class="admin-page-sub">Platform overview and management</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary btn-sm" onclick="loadAdminData()"><i class="fa fa-sync"></i> Refresh</button>
+            <button class="btn btn-primary btn-sm" onclick="exportCSV()"><i class="fa fa-download"></i> Export CSV</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card fade-up stagger-1">
+            <div class="stat-icon users">👥</div>
+            <div>
+              <div class="stat-value" id="statUsers">—</div>
+              <div class="stat-label">Total Users</div>
+            </div>
+          </div>
+          <div class="stat-card fade-up stagger-2">
+            <div class="stat-icon equip">🚜</div>
+            <div>
+              <div class="stat-value" id="statEquip">—</div>
+              <div class="stat-label">Equipment Listed</div>
+            </div>
+          </div>
+          <div class="stat-card fade-up stagger-3">
+            <div class="stat-icon bookings">📋</div>
+            <div>
+              <div class="stat-value" id="statBookings">—</div>
+              <div class="stat-label">Total Bookings</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHART -->
+        <div class="chart-card fade-up">
+          <div class="chart-header">
+            <div class="chart-title"><i class="fa fa-chart-line"></i> Platform Activity</div>
+            <div style="display:flex;gap:6px">
+              <button class="chart-filter-btn" onclick="updateChart('7d',this)">7D</button>
+              <button class="chart-filter-btn active" onclick="updateChart('1m',this)">1M</button>
+              <button class="chart-filter-btn" onclick="updateChart('3m',this)">3M</button>
+            </div>
+          </div>
+          <div class="chart-body"><canvas id="activityChart" height="100"></canvas></div>
+        </div>
+
+        <!-- QUICK PREVIEWS -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+          <div class="table-card fade-up">
+            <div class="table-card-header">
+              <div class="table-card-title"><i class="fa fa-users"></i> Recent Users</div>
+              <button class="btn btn-ghost btn-sm" onclick="switchAdminTab('users', document.querySelector('[onclick*=users]'))">View All</button>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Role</th><th>Status</th></tr></thead>
+              <tbody id="recentUsersBody"></tbody>
+            </table>
+          </div>
+          <div class="table-card fade-up">
+            <div class="table-card-header">
+              <div class="table-card-title"><i class="fa fa-calendar"></i> Recent Bookings</div>
+              <button class="btn btn-ghost btn-sm" onclick="switchAdminTab('bookings', document.querySelector('[onclick*=bookings]'))">View All</button>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Equipment</th><th>Farmer</th><th>Status</th></tr></thead>
+              <tbody id="recentBookingsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ USERS ══ -->
+      <div id="tab-users" style="display:none">
+        <div class="admin-page-header fade-up">
+          <div>
+            <div class="admin-page-title">👥 Users</div>
+            <div class="admin-page-sub">All registered farmers and owners</div>
+          </div>
+        </div>
+        <div class="table-card fade-up">
+          <div class="table-card-header">
+            <div class="table-card-title"><i class="fa fa-users"></i> All Users <span class="badge badge-info" id="usersTableCount">0</span></div>
+            <div class="search-wrap">
+              <i class="fa fa-search"></i>
+              <input type="text" class="table-search" placeholder="Search users…" oninput="searchTable('users',this.value)" />
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Email</th><th>Mobile</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ EQUIPMENT ══ -->
+      <div id="tab-equipment" style="display:none">
+        <div class="admin-page-header fade-up">
+          <div>
+            <div class="admin-page-title">🚜 Equipment</div>
+            <div class="admin-page-sub">All listed equipment across the platform</div>
+          </div>
+        </div>
+        <div class="table-card fade-up">
+          <div class="table-card-header">
+            <div class="table-card-title"><i class="fa fa-tractor"></i> All Equipment <span class="badge badge-info" id="equipTableCount">0</span></div>
+            <div class="search-wrap">
+              <i class="fa fa-search"></i>
+              <input type="text" class="table-search" placeholder="Search equipment…" oninput="searchTable('equipment',this.value)" />
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Equipment</th><th>Owner</th><th>Location</th><th>Price/Hr</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="equipTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ BOOKINGS ══ -->
+      <div id="tab-bookings" style="display:none">
+        <div class="admin-page-header fade-up">
+          <div>
+            <div class="admin-page-title">📋 Bookings</div>
+            <div class="admin-page-sub">All booking records on the platform</div>
+          </div>
+        </div>
+        <div class="table-card fade-up">
+          <div class="table-card-header">
+            <div class="table-card-title"><i class="fa fa-calendar-alt"></i> All Bookings <span class="badge badge-info" id="bookingsTableCount">0</span></div>
+            <div class="search-wrap">
+              <i class="fa fa-search"></i>
+              <input type="text" class="table-search" placeholder="Search bookings…" oninput="searchTable('bookings',this.value)" />
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Booking ID</th><th>Equipment</th><th>Farmer</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="bookingsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- SIDEBAR TOGGLE (mobile) -->
+  <button class="sidebar-toggle" id="sidebarToggle" onclick="document.getElementById('adminSidebar').classList.toggle('open')">
+    <i class="fa fa-bars"></i>
+  </button>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/navbar.js"></script>
+  <script>
+
+    let allUsers     = [];
+    let allEquipment = [];
+    let allBookings  = [];
+    let deleteDocPath = null;
+    let activityChartInstance = null;
+
+    // ── REQUIRE ADMIN ──
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'login.html'; return; }
+      const profile = await getUserProfile(user.uid);
+      if (!profile || profile.role !== 'admin') {
+        showToast('Access denied. Admins only.', 'error');
+        setTimeout(() => window.location.href = 'owner-dashboard.html', 1500);
+        return;
+      }
+      document.getElementById('adminName').textContent = profile.name;
+
+      const loader = document.getElementById('pageLoader');
+      loader.style.opacity = '0';
+      setTimeout(() => { loader.style.display = 'none'; initAdmin(); }, 400);
+    });
+
+    async function initAdmin() {
+      await loadAdminData();
+      initChart();
+      const obs = new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('visible');
+      }), { threshold: 0.05 });
+      document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+    }
+
+    async function loadAdminData() {
+      try {
+        const [usersSnap, equipSnap, bookSnap] = await Promise.all([
+          db.collection('users').get(),
+          db.collection('equipment').get(),
+          db.collection('bookings').get()
+        ]);
+
+        allUsers     = usersSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+        allEquipment = equipSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+        allBookings  = bookSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+        // Update counts
+        document.getElementById('statUsers').textContent    = allUsers.length;
+        document.getElementById('statEquip').textContent    = allEquipment.length;
+        document.getElementById('statBookings').textContent = allBookings.length;
+
+        document.getElementById('sidebarUserCount').textContent    = allUsers.length;
+        document.getElementById('sidebarEquipCount').textContent   = allEquipment.length;
+        document.getElementById('sidebarBookingCount').textContent = allBookings.length;
+
+        document.getElementById('usersTableCount').textContent    = allUsers.length;
+        document.getElementById('equipTableCount').textContent    = allEquipment.length;
+        document.getElementById('bookingsTableCount').textContent = allBookings.length;
+
+        // Render tables
+        renderUsersTable(allUsers);
+        renderEquipTable(allEquipment);
+        renderBookingsTable(allBookings);
+        renderRecentUsers(allUsers.slice(0, 5));
+        renderRecentBookings(allBookings.slice(0, 5));
+
+      } catch (err) {
+        console.error('Admin load error:', err);
+        showToast('Failed to load data.', 'error');
+      }
+    }
+
+    // ── RECENT TABLES (overview) ──
+    function renderRecentUsers(users) {
+      document.getElementById('recentUsersBody').innerHTML = users.map(u => `
+        <tr>
+          <td><div class="user-cell">
+            <div class="user-avatar-sm">${(u.name||'?').slice(0,2).toUpperCase()}</div>
+            <span class="user-name-sm">${u.name||'—'}</span>
+          </div></td>
+          <td><span class="badge badge-${roleColor(u.role)}" style="font-size:0.72rem">${u.role||'—'}</span></td>
+          <td><span class="badge badge-${u.status==='active'?'success':'danger'}" style="font-size:0.72rem">${u.status||'active'}</span></td>
+        </tr>`).join('');
+    }
+
+    function renderRecentBookings(bookings) {
+      document.getElementById('recentBookingsBody').innerHTML = bookings.map(b => `
+        <tr>
+          <td style="font-size:0.82rem">${b.equipmentName||'—'}</td>
+          <td style="font-size:0.82rem">${b.renterName||'—'}</td>
+          <td><span class="badge badge-${statusColor(b.status)}" style="font-size:0.7rem">${b.status||'—'}</span></td>
+        </tr>`).join('');
+    }
+
+    // ── FULL USERS TABLE ──
+    function renderUsersTable(users) {
+      document.getElementById('usersTableBody').innerHTML = users.length
+        ? users.map(u => `
+          <tr id="user-row-${u.id}">
+            <td><div class="user-cell">
+              <div class="user-avatar-sm">${(u.name||'?').slice(0,2).toUpperCase()}</div>
+              <span class="user-name-sm">${u.name||'—'}</span>
+            </div></td>
+            <td style="font-size:0.82rem;color:var(--text-muted)">${u.email||'—'}</td>
+            <td style="font-size:0.82rem;color:var(--text-muted)">${u.mobile||'—'}</td>
+            <td><span class="badge badge-${roleColor(u.role)}" style="font-size:0.72rem">${u.role||'—'}</span></td>
+            <td><span class="badge badge-${u.status==='active'?'success':'danger'}" style="font-size:0.72rem">${u.status||'active'}</span></td>
+            <td><div class="action-btns">
+              <button class="action-btn view" title="View" onclick="showToast('User: ${u.name||u.id}')"><i class="fa fa-eye"></i></button>
+              <button class="action-btn delete" title="Delete" onclick="openDeleteModal('users/${u.id}')"><i class="fa fa-trash"></i></button>
+            </div></td>
+          </tr>`).join('')
+        : `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">No users found.</td></tr>`;
+    }
+
+    // ── FULL EQUIPMENT TABLE ──
+    function renderEquipTable(equip) {
+      document.getElementById('equipTableBody').innerHTML = equip.length
+        ? equip.map(e => `
+          <tr id="equip-row-${e.id}">
+            <td><div class="user-cell">
+              <span style="font-size:1.5rem">${e.icon||'🔧'}</span>
+              <span class="user-name-sm">${e.name||'—'}</span>
+            </div></td>
+            <td style="font-size:0.85rem">${e.ownerName||'—'}</td>
+            <td style="font-size:0.82rem;color:var(--text-muted)"><i class="fa fa-map-marker-alt" style="color:var(--primary)"></i> ${e.location||'—'}</td>
+            <td style="font-weight:700;color:var(--primary)">₹${(e.priceHour||0).toLocaleString()}/hr</td>
+            <td><span class="badge badge-${e.status==='available'?'success':'warning'}" style="font-size:0.72rem">${e.status||'—'}</span></td>
+            <td><div class="action-btns">
+              <button class="action-btn view" title="View" onclick="showToast('${e.name}')"><i class="fa fa-eye"></i></button>
+              <button class="action-btn delete" title="Delete" onclick="openDeleteModal('equipment/${e.id}')"><i class="fa fa-trash"></i></button>
+            </div></td>
+          </tr>`).join('')
+        : `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">No equipment found.</td></tr>`;
+    }
+
+    // ── FULL BOOKINGS TABLE ──
+    function renderBookingsTable(bookings) {
+      document.getElementById('bookingsTableBody').innerHTML = bookings.length
+        ? bookings.map(b => `
+          <tr id="booking-row-${b.id}">
+            <td style="font-weight:700;font-size:0.8rem;color:var(--primary)">${b.id.slice(0,8).toUpperCase()}</td>
+            <td style="font-size:0.85rem">${b.equipmentName||'—'}</td>
+            <td><div class="user-cell">
+              <div class="user-avatar-sm" style="width:28px;height:28px;font-size:0.7rem">${(b.renterName||'?').slice(0,2).toUpperCase()}</div>
+              <span style="font-size:0.85rem">${b.renterName||'—'}</span>
+            </div></td>
+            <td style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap">${b.startDate||'—'}</td>
+            <td style="font-weight:700;color:var(--primary)">₹${(b.totalAmount||0).toLocaleString()}</td>
+            <td><span class="badge badge-${statusColor(b.status)}" style="font-size:0.72rem">${b.status||'—'}</span></td>
+            <td><div class="action-btns">
+              <button class="action-btn view" title="View" onclick="showToast('Booking: ${b.id.slice(0,8)}')"><i class="fa fa-eye"></i></button>
+              <button class="action-btn delete" title="Delete" onclick="openDeleteModal('bookings/${b.id}')"><i class="fa fa-trash"></i></button>
+            </div></td>
+          </tr>`).join('')
+        : `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">No bookings found.</td></tr>`;
+    }
+
+    // ── SEARCH ──
+    function searchTable(type, query) {
+      const q = query.toLowerCase();
+      if (type === 'users') {
+        renderUsersTable(allUsers.filter(u =>
+          (u.name||'').toLowerCase().includes(q) ||
+          (u.email||'').toLowerCase().includes(q) ||
+          (u.mobile||'').includes(q) ||
+          (u.role||'').toLowerCase().includes(q)));
+      } else if (type === 'equipment') {
+        renderEquipTable(allEquipment.filter(e =>
+          (e.name||'').toLowerCase().includes(q) ||
+          (e.ownerName||'').toLowerCase().includes(q) ||
+          (e.location||'').toLowerCase().includes(q)));
+      } else if (type === 'bookings') {
+        renderBookingsTable(allBookings.filter(b =>
+          (b.equipmentName||'').toLowerCase().includes(q) ||
+          (b.renterName||'').toLowerCase().includes(q) ||
+          b.id.toLowerCase().includes(q)));
+      }
+    }
+
+    // ── DELETE ──
+    function openDeleteModal(path) { deleteDocPath = path; document.getElementById('deleteModal').classList.add('open'); }
+    function closeDeleteModal() { deleteDocPath = null; document.getElementById('deleteModal').classList.remove('open'); }
+
+    async function confirmDelete() {
+      if (!deleteDocPath) return;
+      const [col, docId] = deleteDocPath.split('/');
+      try {
+        await db.collection(col).doc(docId).delete();
+        showToast('Record deleted.');
+        closeDeleteModal();
+        await loadAdminData();
+      } catch (err) {
+        showToast('Delete failed.', 'error');
+      }
+    }
+
+    // ── CHART ──
+    const chartData = {
+      '7d': { labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], bookings:[1,2,1,3,2,4,2], users:[1,0,2,1,1,2,1] },
+      '1m': { labels:['W1','W2','W3','W4'],                       bookings:[4,7,5,8],        users:[3,5,4,6]       },
+      '3m': { labels:['Nov','Dec','Jan'],                          bookings:[12,18,22],       users:[8,12,15]       }
+    };
+
+    function getChartColors() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return { grid: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', text: dark ? '#9ca3af' : '#6b7280' };
+    }
+
+    function initChart() {
+      const ctx    = document.getElementById('activityChart').getContext('2d');
+      const colors = getChartColors();
+      const data   = chartData['1m'];
+      activityChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [
+            { label:'Bookings', data:data.bookings, borderColor:'#16a34a', backgroundColor:'rgba(22,163,74,0.08)', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#16a34a', fill:true, tension:0.4 },
+            { label:'New Users', data:data.users,  borderColor:'#0ea5e9', backgroundColor:'rgba(14,165,233,0.08)', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#0ea5e9', fill:true, tension:0.4 }
+          ]
+        },
+        options: {
+          responsive:true,
+          plugins: { legend: { labels: { color:colors.text, font:{size:12} } } },
+          scales: {
+            x: { grid:{color:colors.grid}, ticks:{color:colors.text} },
+            y: { grid:{color:colors.grid}, ticks:{color:colors.text, stepSize:1}, beginAtZero:true }
+          }
+        }
+      });
+    }
+
+    function updateChart(period, btn) {
+      document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const data = chartData[period];
+      activityChartInstance.data.labels = data.labels;
+      activityChartInstance.data.datasets[0].data = data.bookings;
+      activityChartInstance.data.datasets[1].data = data.users;
+      activityChartInstance.update();
+    }
+
+    // ── TAB SWITCH ──
+    function switchAdminTab(tab, el) {
+      ['overview','users','equipment','bookings'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+      });
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    // ── EXPORT CSV ──
+    function exportCSV() {
+      const rows = [
+        ['Name','Email','Mobile','Role','Status'],
+        ...allUsers.map(u => [u.name, u.email, u.mobile, u.role, u.status])
+      ];
+      const csv  = rows.map(r => r.map(v => `"${v||''}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type:'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'agroshare_users.csv';
+      a.click(); URL.revokeObjectURL(url);
+      showToast('CSV exported!');
+    }
+
+    // ── HELPERS ──
+    function statusColor(s) {
+      return s==='completed'?'success':s==='confirmed'?'info':s==='pending'?'warning':'danger';
+    }
+    function roleColor(r) {
+      return r==='owner'?'success':r==='operator'?'info':'warning';
+    }
+  </script>
+</body>
+</html>

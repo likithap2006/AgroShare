@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace – AgroShare</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { padding-top: var(--navbar-height); background: var(--bg-main); }
+
+    /* ── FILTERS BAR ── */
+    .filters-bar {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 0; position: sticky;
+      top: var(--navbar-height); z-index: 100;
+    }
+    .filters-inner {
+      display: flex; align-items: center;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .filter-search {
+      flex: 1; min-width: 200px;
+      padding: 9px 16px 9px 38px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-full);
+      background: var(--bg-input);
+      font-size: 0.88rem; color: var(--text-primary);
+      font-family: var(--font);
+    }
+    .filter-search:focus { border-color: var(--primary); outline: none; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .filter-search-wrap { position: relative; flex: 1; min-width: 200px; }
+
+    .filter-chip {
+      padding: 7px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-full);
+      background: var(--bg-input);
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; color: var(--text-muted);
+      font-family: var(--font); transition: var(--transition-fast);
+      white-space: nowrap;
+    }
+    .filter-chip:hover, .filter-chip.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    /* ── CONTENT ── */
+    .market-content {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1.5rem; padding: 2rem 0;
+    }
+
+    /* ── SIDEBAR FILTERS ── */
+    .market-sidebar {
+      position: sticky;
+      top: calc(var(--navbar-height) + 62px);
+      height: fit-content;
+    }
+    .filter-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem; margin-bottom: 1rem;
+    }
+    .filter-card-title {
+      font-size: 0.85rem; font-weight: 700;
+      color: var(--text-secondary); text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 0.75rem;
+    }
+    .filter-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; cursor: pointer;
+      font-size: 0.87rem; color: var(--text-secondary);
+    }
+    .filter-option input[type=checkbox] { accent-color: var(--primary); width: 15px; height: 15px; }
+    .price-range { display: flex; gap: 8px; align-items: center; }
+    .price-input {
+      width: 80px; padding: 6px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg-input);
+      font-size: 0.82rem; color: var(--text-primary);
+      font-family: var(--font);
+    }
+    .price-input:focus { border-color: var(--primary); outline: none; }
+
+    /* ── EQUIPMENT GRID ── */
+    .equip-results { flex: 1; }
+    .results-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .results-count { font-size: 0.88rem; color: var(--text-muted); }
+    .sort-select {
+      padding: 6px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-full);
+      background: var(--bg-input);
+      font-size: 0.82rem; color: var(--text-secondary);
+      font-family: var(--font); cursor: pointer;
+    }
+
+    .equip-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .equip-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      overflow: hidden; transition: var(--transition);
+      cursor: pointer;
+    }
+    .equip-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .equip-card-img {
+      height: 160px; background: var(--gradient-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3.5rem; position: relative;
+    }
+    .equip-status-badge {
+      position: absolute; top: 10px; right: 10px;
+    }
+    .equip-card-body { padding: 1.1rem; }
+    .equip-card-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .equip-card-owner { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; }
+    .equip-card-meta  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .equip-card-price { font-size: 1rem; font-weight: 800; color: var(--primary); }
+    .equip-card-loc   { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ── BOOKING MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: var(--bg-overlay);
+      backdrop-filter: blur(4px); z-index: 2000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--bg-card); border-radius: var(--radius-xl);
+      padding: 2rem; max-width: 480px; width: 100%;
+      box-shadow: var(--shadow-lg); transform: scale(0.95);
+      transition: transform 0.3s; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-overlay.open .modal-box { transform: scale(1); }
+    .modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1.25rem; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .empty-state p { font-size: 0.95rem; }
+
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      .market-content { grid-template-columns: 1fr; }
+      .market-sidebar { position: static; }
+    }
+    @media (max-width: 580px) {
+      .equip-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE LOADER -->
+  <div class="page-loader" id="pageLoader"><div class="loader-spinner"></div></div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- BOOKING MODAL -->
+  <div class="modal-overlay" id="bookingModal">
+    <div class="modal-box">
+      <div class="modal-title">📋 Book Equipment</div>
+      <div id="bookingEquipName" style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:4px"></div>
+      <div id="bookingEquipPrice" style="font-size:0.88rem;color:var(--primary);font-weight:700;margin-bottom:1.5rem"></div>
+
+      <div class="form-group">
+        <label class="form-label">Start Date</label>
+        <input type="date" id="bookStartDate" class="form-input" />
+        <span class="form-error" id="startDateError"></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">End Date</label>
+        <input type="date" id="bookEndDate" class="form-input" />
+        <span class="form-error" id="endDateError"></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hours per Day</label>
+        <input type="number" id="bookHours" class="form-input" min="1" max="12" value="4" placeholder="e.g. 4" />
+      </div>
+
+      <div id="bookTotalDisplay" style="background:var(--bg-hover);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:1.25rem;font-size:0.9rem;display:none">
+        <span style="color:var(--text-muted)">Estimated Total:</span>
+        <span id="bookTotal" style="font-weight:800;color:var(--primary);font-size:1.1rem;float:right"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Message to Owner (optional)</label>
+        <textarea id="bookMessage" class="form-textarea" rows="2" placeholder="Any specific requirements…"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-block" onclick="closeBooking()">Cancel</button>
+        <button class="btn btn-primary btn-block" id="confirmBookBtn" onclick="confirmBooking()">
+          Confirm Booking
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="navbar-logo"><span>🌾</span> AgroShare</a>
+    <ul class="navbar-links">
+      <li><a href="index.html">Home</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="marketplace.html" class="active">Marketplace</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="owner-dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle"><i class="fa fa-moon" id="themeIcon"></i></button>
+      <span id="navUserName"></span>
+      <a href="login.html" class="btn btn-secondary btn-sm hide-mobile" id="navLoginLink">Login</a>
+      <button class="btn btn-ghost btn-sm" id="navLogoutBtn" style="display:none">
+        <i class="fa fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- FILTERS BAR -->
+  <div class="filters-bar">
+    <div class="container">
+      <div class="filters-inner">
+        <div class="filter-search-wrap">
+          <i class="fa fa-search search-icon"></i>
+          <input type="text" class="filter-search" placeholder="Search equipment, location…"
+            id="searchInput" oninput="applyFilters()" />
+        </div>
+        <button class="filter-chip active" data-cat="all"   onclick="setCat('all',this)">All</button>
+        <button class="filter-chip"        data-cat="tractor"  onclick="setCat('tractor',this)">🚜 Tractors</button>
+        <button class="filter-chip"        data-cat="harvester" onclick="setCat('harvester',this)">🌾 Harvesters</button>
+        <button class="filter-chip"        data-cat="drone"  onclick="setCat('drone',this)">🚁 Drones</button>
+        <button class="filter-chip"        data-cat="pump"   onclick="setCat('pump',this)">💧 Pumps</button>
+        <button class="filter-chip"        data-cat="other"  onclick="setCat('other',this)">⚙️ Other</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="container">
+    <div class="market-content">
+
+      <!-- SIDEBAR -->
+      <aside class="market-sidebar">
+        <div class="filter-card">
+          <div class="filter-card-title">Availability</div>
+          <label class="filter-option">
+            <input type="checkbox" id="filterAvailable" onchange="applyFilters()" checked />
+            Available only
+          </label>
+        </div>
+
+        <div class="filter-card">
+          <div class="filter-card-title">Price / Hour</div>
+          <div class="price-range">
+            <input type="number" class="price-input" id="priceMin" placeholder="₹0"    onchange="applyFilters()" />
+            <span style="color:var(--text-muted)">–</span>
+            <input type="number" class="price-input" id="priceMax" placeholder="₹5000" onchange="applyFilters()" />
+          </div>
+        </div>
+
+        <button class="btn btn-ghost btn-block" onclick="resetFilters()" style="margin-top:4px">
+          <i class="fa fa-undo"></i> Reset Filters
+        </button>
+      </aside>
+
+      <!-- EQUIPMENT GRID -->
+      <div class="equip-results">
+        <div class="results-header">
+          <span class="results-count" id="resultsCount">Loading…</span>
+          <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+            <option value="newest">Newest First</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+        <div class="equip-grid" id="equipGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <!-- AUTH GUARD: guests are redirected to home page -->
+  <script>
+    (function() {
+      if (typeof auth !== 'undefined') {
+        auth.onAuthStateChanged(function(user) {
+          if (!user) { window.location.replace('index.html'); }
+        });
+      }
+    })();
+  </script>
+
+  <script src="js/navbar.js"></script>
+  <script>
+
+    let allEquipment = [];
+    let activeCategory = 'all';
+    let selectedEquip  = null;
+    let currentUser    = null;
+
+    auth.onAuthStateChanged(u => { currentUser = u; });
+
+    // ── LOAD FROM FIRESTORE ──
+    window.addEventListener('load', async function() {
+      const loader = document.getElementById('pageLoader');
+      try {
+        const snap = await db.collection('equipment').get();
+        allEquipment = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (allEquipment.length === 0) allEquipment = getDemoEquipment();
+      } catch (err) {
+        console.warn('Using demo data:', err.message);
+        allEquipment = getDemoEquipment();
+      } finally {
+        loader.style.opacity = '0';
+        setTimeout(() => { loader.style.display = 'none'; }, 400);
+      }
+
+      applyFilters();
+      // Fade-in observer
+      const obs = new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('visible');
+      }), { threshold: 0.05 });
+      document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+    });
+
+    // ── DEMO DATA (fallback) ──
+    function getDemoEquipment() {
+      return [
+        { id:'d1', icon:'🚜', name:'Mahindra 575 DI Tractor', category:'tractor',   ownerName:'Priya Kumari',   location:'Pune, MH',    priceHour:800,  status:'available', description:'Well-maintained 47 HP tractor.', createdAt:{toDate:()=>new Date('2024-01-10')} },
+        { id:'d2', icon:'🌾', name:'John Deere Harvester',    category:'harvester', ownerName:'Arun Patil',     location:'Nashik, MH',  priceHour:2500, status:'busy',      description:'Heavy duty combine harvester.',  createdAt:{toDate:()=>new Date('2024-01-08')} },
+        { id:'d3', icon:'🚁', name:'DJI Agras T30 Drone',     category:'drone',     ownerName:'Mohan Lal',      location:'Nagpur, MH',  priceHour:1200, status:'available', description:'Agricultural spraying drone.',    createdAt:{toDate:()=>new Date('2024-01-06')} },
+        { id:'d4', icon:'💧', name:'Kirloskar Pump 5HP',      category:'pump',      ownerName:'Priya Kumari',   location:'Solapur, MH', priceHour:350,  status:'available', description:'5HP water pump for irrigation.',  createdAt:{toDate:()=>new Date('2024-01-04')} },
+        { id:'d5', icon:'🪣', name:'Power Sprayer 16L',       category:'other',     ownerName:'Arun Patil',     location:'Pune, MH',    priceHour:400,  status:'available', description:'Portable power sprayer.',         createdAt:{toDate:()=>new Date('2024-01-03')} },
+        { id:'d6', icon:'⚙️', name:'MB Plough (3 Furrow)',    category:'other',     ownerName:'Mohan Lal',      location:'Latur, MH',   priceHour:600,  status:'busy',      description:'3 furrow MB plough.',             createdAt:{toDate:()=>new Date('2024-01-02')} },
+      ];
+    }
+
+    // ── FILTERS ──
+    function setCat(cat, el) {
+      activeCategory = cat;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const query       = document.getElementById('searchInput').value.toLowerCase();
+      const onlyAvail   = document.getElementById('filterAvailable').checked;
+      const priceMin    = parseFloat(document.getElementById('priceMin').value) || 0;
+      const priceMax    = parseFloat(document.getElementById('priceMax').value) || Infinity;
+      const sort        = document.getElementById('sortSelect').value;
+
+      let results = allEquipment.filter(e => {
+        if (activeCategory !== 'all' && e.category !== activeCategory) return false;
+        if (onlyAvail && e.status !== 'available') return false;
+        if (e.priceHour < priceMin || e.priceHour > priceMax) return false;
+        if (query) {
+          const haystack = (e.name + e.ownerName + e.location + (e.description||'')).toLowerCase();
+          if (!haystack.includes(query)) return false;
+        }
+        return true;
+      });
+
+      // Sort
+      if (sort === 'price-asc')  results.sort((a,b) => a.priceHour - b.priceHour);
+      if (sort === 'price-desc') results.sort((a,b) => b.priceHour - a.priceHour);
+      if (sort === 'name')       results.sort((a,b) => a.name.localeCompare(b.name));
+      if (sort === 'newest')     results.sort((a,b) => {
+        const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+        const db2 = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+        return db2 - da;
+      });
+
+      renderGrid(results);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterAvailable').checked = true;
+      document.getElementById('priceMin').value = '';
+      document.getElementById('priceMax').value = '';
+      document.getElementById('sortSelect').value = 'newest';
+      setCat('all', document.querySelector('[data-cat="all"]'));
+    }
+
+    // ── RENDER ──
+    function renderGrid(items) {
+      const grid = document.getElementById('equipGrid');
+      document.getElementById('resultsCount').textContent = `${items.length} equipment found`;
+
+      if (items.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-icon">🔍</div>
+            <p>No equipment found matching your filters.</p>
+            <button class="btn btn-ghost" style="margin-top:1rem" onclick="resetFilters()">Clear Filters</button>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = items.map(e => `
+        <div class="equip-card" onclick="openBooking('${e.id}')">
+          <div class="equip-card-img">
+            ${e.icon || '🔧'}
+            <div class="equip-status-badge">
+              <span class="badge badge-${e.status === 'available' ? 'success' : 'warning'}" style="font-size:0.7rem">
+                ${e.status === 'available' ? 'Available' : 'Busy'}
+              </span>
+            </div>
+          </div>
+          <div class="equip-card-body">
+            <div class="equip-card-title">${e.name}</div>
+            <div class="equip-card-owner">👤 ${e.ownerName || 'Owner'}</div>
+            <div class="equip-card-meta">
+              <span class="equip-card-price">₹${(e.priceHour||0).toLocaleString()}/hr</span>
+              <span class="equip-card-loc"><i class="fa fa-map-marker-alt" style="color:var(--primary)"></i> ${e.location || '—'}</span>
+            </div>
+            ${e.status === 'available'
+              ? `<button class="btn btn-primary" style="width:100%;padding:8px" onclick="event.stopPropagation();openBooking('${e.id}')">Book Now</button>`
+              : `<button class="btn btn-ghost" style="width:100%;padding:8px" disabled>Currently Busy</button>`
+            }
+          </div>
+        </div>`).join('');
+    }
+
+    // ── BOOKING ──
+    function openBooking(equipId) {
+      selectedEquip = allEquipment.find(e => e.id === equipId);
+      if (!selectedEquip) return;
+
+      if (selectedEquip.status !== 'available') {
+        showToast('This equipment is not available right now.', 'error'); return;
+      }
+
+      document.getElementById('bookingEquipName').textContent  = selectedEquip.name;
+      document.getElementById('bookingEquipPrice').textContent = `₹${selectedEquip.priceHour}/hr`;
+
+      // Set min date = today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('bookStartDate').min = today;
+      document.getElementById('bookEndDate').min   = today;
+      document.getElementById('bookStartDate').value = '';
+      document.getElementById('bookEndDate').value   = '';
+      document.getElementById('bookHours').value     = 4;
+      document.getElementById('bookMessage').value   = '';
+      document.getElementById('bookTotalDisplay').style.display = 'none';
+
+      document.getElementById('bookingModal').classList.add('open');
+    }
+
+    function closeBooking() {
+      document.getElementById('bookingModal').classList.remove('open');
+      selectedEquip = null;
+    }
+
+    // Live total calculation
+    ['bookStartDate','bookEndDate','bookHours'].forEach(id => {
+      document.getElementById(id).addEventListener('input', calcTotal);
+    });
+
+    function calcTotal() {
+      const start = new Date(document.getElementById('bookStartDate').value);
+      const end   = new Date(document.getElementById('bookEndDate').value);
+      const hours = parseFloat(document.getElementById('bookHours').value) || 0;
+      if (!selectedEquip || isNaN(start) || isNaN(end) || end < start) {
+        document.getElementById('bookTotalDisplay').style.display = 'none'; return;
+      }
+      const days  = Math.max(1, Math.round((end - start) / (1000*60*60*24)) + 1);
+      const total = days * hours * selectedEquip.priceHour;
+      document.getElementById('bookTotal').textContent = `₹${total.toLocaleString()}`;
+      document.getElementById('bookTotalDisplay').style.display = 'block';
+    }
+
+    async function confirmBooking() {
+      if (!currentUser) {
+        showToast('Please login to book equipment.', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1200); return;
+      }
+
+      const startDate = document.getElementById('bookStartDate').value;
+      const endDate   = document.getElementById('bookEndDate').value;
+      const hours     = parseInt(document.getElementById('bookHours').value) || 4;
+      const message   = document.getElementById('bookMessage').value.trim();
+
+      // Clear errors
+      ['startDateError','endDateError'].forEach(id => {
+        document.getElementById(id).textContent = '';
+        document.getElementById(id).classList.remove('show');
+      });
+
+      let valid = true;
+      if (!startDate) { document.getElementById('startDateError').textContent = 'Select start date.'; document.getElementById('startDateError').classList.add('show'); valid = false; }
+      if (!endDate)   { document.getElementById('endDateError').textContent   = 'Select end date.';   document.getElementById('endDateError').classList.add('show');   valid = false; }
+      if (!valid) return;
+
+      const btn = document.getElementById('confirmBookBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Booking…';
+
+      try {
+        const days  = Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / (1000*60*60*24)) + 1);
+        const total = days * hours * selectedEquip.priceHour;
+        const profile = await getUserProfile(currentUser.uid);
+
+        await db.collection('bookings').add({
+          equipmentId:   selectedEquip.id,
+          equipmentName: selectedEquip.name,
+          ownerId:       selectedEquip.ownerId || '',
+          renterId:      currentUser.uid,
+          renterName:    profile ? profile.name : currentUser.displayName || 'Farmer',
+          startDate, endDate, hours, message,
+          totalAmount:   total,
+          status:        'pending',
+          createdAt:     firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        closeBooking();
+        showToast('Booking confirmed! Check your dashboard.');
+      } catch (err) {
+        console.error(err);
+        showToast('Booking failed. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Confirm Booking';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – AgroShare</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { padding-top: var(--navbar-height); background: var(--bg-main); }
+
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - var(--navbar-height));
+    }
+
+    /* ── SIDEBAR ── */
+    .dash-sidebar {
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky; top: var(--navbar-height);
+      height: calc(100vh - var(--navbar-height));
+      overflow-y: auto;
+    }
+    .sidebar-profile {
+      padding: 0 1.25rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.75rem;
+    }
+    .sidebar-avatar {
+      width: 56px; height: 56px; border-radius: var(--radius-full);
+      background: var(--gradient-primary); display: flex;
+      align-items: center; justify-content: center;
+      color: white; font-size: 1.3rem; font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .sidebar-name { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+    .sidebar-role { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+
+    .sidebar-section { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 0 1.25rem; margin: 1rem 0 0.4rem; }
+
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 1.25rem; font-size: 0.88rem;
+      font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: var(--transition-fast);
+      border-left: 3px solid transparent;
+    }
+    .sidebar-link:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .sidebar-link.active { background: var(--primary-light); border-left-color: var(--primary); color: var(--primary-dark); font-weight: 700; }
+    [data-theme="dark"] .sidebar-link.active { background: rgba(22,163,74,0.12); color: #4ade80; }
+    .sidebar-link i { width: 18px; text-align: center; }
+
+    .dash-main { padding: 2rem; }
+
+    /* ── PAGE HEADER ── */
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .page-title  { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+    .page-sub    { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ── STAT CARDS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+    .stat-card  { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-xl); padding: 1.25rem; }
+    .stat-icon  { width: 48px; height: 48px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 10px; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
+    .stat-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+    .icon-blue   { background: #e0f2fe; }
+    .icon-green  { background: #dcfce7; }
+    .icon-yellow { background: #fef9c3; }
+    .icon-purple { background: #ede9fe; }
+
+    /* ── ADD EQUIPMENT MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: var(--bg-overlay); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box { background: var(--bg-card); border-radius: var(--radius-xl); padding: 2rem; max-width: 520px; width: 100%; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.3s; max-height: 90vh; overflow-y: auto; }
+    .modal-overlay.open .modal-box { transform: scale(1); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title  { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+    .modal-close  { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); }
+
+    /* Icon picker */
+    .icon-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .icon-opt { font-size: 1.5rem; padding: 6px 10px; border-radius: var(--radius-md); cursor: pointer; border: 2px solid transparent; transition: var(--transition-fast); }
+    .icon-opt:hover, .icon-opt.selected { border-color: var(--primary); background: var(--primary-light); }
+
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MOBILE ── */
+    .sidebar-toggle { display: none; position: fixed; bottom: 1.5rem; right: 1.5rem; width: 50px; height: 50px; border-radius: var(--radius-full); background: var(--gradient-primary); color: white; border: none; cursor: pointer; font-size: 1.2rem; z-index: 900; box-shadow: var(--shadow-lg); }
+
+    @media (max-width: 1024px) {
+      .dashboard-layout { grid-template-columns: 1fr; }
+      .dash-sidebar { display: none; position: fixed; top: var(--navbar-height); left: 0; bottom: 0; z-index: 800; width: 260px; box-shadow: var(--shadow-lg); }
+      .dash-sidebar.open { display: block; }
+      .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 580px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .dash-main  { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE LOADER -->
+  <div class="page-loader" id="pageLoader"><div class="loader-spinner"></div></div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ADD EQUIPMENT MODAL -->
+  <div class="modal-overlay" id="addEquipModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">🚜 Add Equipment</div>
+        <button class="modal-close" onclick="closeAddEquip()"><i class="fa fa-times"></i></button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Equipment Name</label>
+        <input type="text" id="equipName" class="form-input" placeholder="e.g. Mahindra 575 DI Tractor" />
+        <span class="form-error" id="equipNameError"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select id="equipCategory" class="form-input">
+          <option value="tractor">🚜 Tractor</option>
+          <option value="harvester">🌾 Harvester</option>
+          <option value="drone">🚁 Drone</option>
+          <option value="pump">💧 Pump</option>
+          <option value="other">⚙️ Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Icon</label>
+        <div class="icon-picker" id="iconPicker">
+          <span class="icon-opt selected" data-icon="🚜" onclick="pickIcon(this)">🚜</span>
+          <span class="icon-opt" data-icon="🌾" onclick="pickIcon(this)">🌾</span>
+          <span class="icon-opt" data-icon="🚁" onclick="pickIcon(this)">🚁</span>
+          <span class="icon-opt" data-icon="💧" onclick="pickIcon(this)">💧</span>
+          <span class="icon-opt" data-icon="🪣" onclick="pickIcon(this)">🪣</span>
+          <span class="icon-opt" data-icon="⚙️" onclick="pickIcon(this)">⚙️</span>
+          <span class="icon-opt" data-icon="🔧" onclick="pickIcon(this)">🔧</span>
+          <span class="icon-opt" data-icon="🌱" onclick="pickIcon(this)">🌱</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Price / Hour (₹)</label>
+          <input type="number" id="equipPrice" class="form-input" placeholder="800" min="1" />
+          <span class="form-error" id="equipPriceError"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <input type="text" id="equipLocation" class="form-input" placeholder="Pune, MH" />
+          <span class="form-error" id="equipLocError"></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea id="equipDesc" class="form-textarea" rows="3" placeholder="Describe condition, features…"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-block" onclick="closeAddEquip()">Cancel</button>
+        <button class="btn btn-primary btn-block" id="saveEquipBtn" onclick="saveEquipment()">Save Equipment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRM MODAL -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal-box" style="max-width:360px;text-align:center">
+      <div style="font-size:3rem;margin-bottom:1rem">🗑️</div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Delete this?</div>
+      <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:1.5rem">This action cannot be undone.</p>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-block" onclick="closeDelete()">Cancel</button>
+        <button class="btn btn-danger btn-block" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="navbar-logo"><span>🌾</span> AgroShare</a>
+    <ul class="navbar-links">
+      <li><a href="index.html">Home</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="marketplace.html">Marketplace</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="owner-dashboard.html" class="active">Dashboard</a></li>
+    </ul>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle"><i class="fa fa-moon" id="themeIcon"></i></button>
+      <span id="navUserName"></span>
+      <button class="btn btn-ghost btn-sm" id="navLogoutBtn" style="display:none">
+        <i class="fa fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD LAYOUT -->
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="dash-sidebar" id="dashSidebar">
+      <div class="sidebar-profile">
+        <div class="sidebar-avatar" id="sidebarAvatar">👤</div>
+        <div class="sidebar-name" id="sidebarName">Loading…</div>
+        <div class="sidebar-role" id="sidebarRole"></div>
+      </div>
+
+      <div class="sidebar-section">Overview</div>
+      <div class="sidebar-link active" onclick="switchTab('overview', this)"><i class="fa fa-tachometer-alt"></i> Dashboard</div>
+
+      <div class="sidebar-section">My Activity</div>
+      <div class="sidebar-link" onclick="switchTab('myEquipment', this)"><i class="fa fa-tractor"></i> My Equipment</div>
+      <div class="sidebar-link" onclick="switchTab('myBookings', this)"><i class="fa fa-calendar-alt"></i> My Bookings</div>
+      <div class="sidebar-link" onclick="switchTab('incomingBookings', this)"><i class="fa fa-inbox"></i> Incoming Requests</div>
+
+      <div class="sidebar-section">Account</div>
+      <div class="sidebar-link" onclick="switchTab('profile', this)"><i class="fa fa-user"></i> My Profile</div>
+      <a href="index.html" class="sidebar-link"><i class="fa fa-home"></i> Go to Home</a>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="dash-main">
+
+      <!-- ══ OVERVIEW ══ -->
+      <div id="tab-overview">
+        <div class="page-header fade-up">
+          <div>
+            <div class="page-title">📊 Dashboard</div>
+            <div class="page-sub" id="welcomeMsg">Welcome back!</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddEquip()">
+            <i class="fa fa-plus"></i> Add Equipment
+          </button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card fade-up stagger-1">
+            <div class="stat-icon icon-blue">🚜</div>
+            <div class="stat-value" id="statMyEquip">0</div>
+            <div class="stat-label">My Equipment</div>
+          </div>
+          <div class="stat-card fade-up stagger-2">
+            <div class="stat-icon icon-green">📋</div>
+            <div class="stat-value" id="statMyBookings">0</div>
+            <div class="stat-label">My Bookings</div>
+          </div>
+          <div class="stat-card fade-up stagger-3">
+            <div class="stat-icon icon-yellow">📥</div>
+            <div class="stat-value" id="statIncoming">0</div>
+            <div class="stat-label">Incoming Requests</div>
+          </div>
+          <div class="stat-card fade-up stagger-4">
+            <div class="stat-icon icon-purple">💰</div>
+            <div class="stat-value" id="statEarnings">₹0</div>
+            <div class="stat-label">Total Earnings</div>
+          </div>
+        </div>
+
+        <!-- Recent Bookings Preview -->
+        <div class="table-card fade-up">
+          <div class="table-card-header">
+            <div class="table-card-title"><i class="fa fa-calendar"></i> Recent Bookings</div>
+            <button class="btn btn-ghost btn-sm" onclick="switchTab('myBookings', document.querySelector('[onclick*=myBookings]'))">View All</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Equipment</th><th>Dates</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody id="recentBookingsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ MY EQUIPMENT ══ -->
+      <div id="tab-myEquipment" style="display:none">
+        <div class="page-header fade-up">
+          <div>
+            <div class="page-title">🚜 My Equipment</div>
+            <div class="page-sub">Equipment you have listed</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAddEquip()">
+            <i class="fa fa-plus"></i> Add Equipment
+          </button>
+        </div>
+
+        <div id="myEquipGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- ══ MY BOOKINGS ══ -->
+      <div id="tab-myBookings" style="display:none">
+        <div class="page-header fade-up">
+          <div>
+            <div class="page-title">📋 My Bookings</div>
+            <div class="page-sub">Equipment you have booked</div>
+          </div>
+        </div>
+        <div class="table-card fade-up">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Equipment</th><th>Start</th><th>End</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="myBookingsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ INCOMING BOOKINGS ══ -->
+      <div id="tab-incomingBookings" style="display:none">
+        <div class="page-header fade-up">
+          <div>
+            <div class="page-title">📥 Incoming Requests</div>
+            <div class="page-sub">Booking requests for your equipment</div>
+          </div>
+        </div>
+        <div class="table-card fade-up">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Renter</th><th>Equipment</th><th>Dates</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="incomingBookingsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PROFILE ══ -->
+      <div id="tab-profile" style="display:none">
+        <div class="page-header fade-up">
+          <div>
+            <div class="page-title">👤 My Profile</div>
+            <div class="page-sub">Update your account details</div>
+          </div>
+        </div>
+        <div class="card fade-up" style="max-width:500px;padding:2rem">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="profileName" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mobile</label>
+            <input type="tel" id="profileMobile" class="form-input" maxlength="10" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input type="text" id="profileLocation" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email (cannot change)</label>
+            <input type="email" id="profileEmail" class="form-input" disabled style="opacity:0.6" />
+          </div>
+          <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- SIDEBAR TOGGLE (mobile) -->
+  <button class="sidebar-toggle" id="sidebarToggle" onclick="document.getElementById('dashSidebar').classList.toggle('open')">
+    <i class="fa fa-bars"></i>
+  </button>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <!-- AUTH GUARD: guests are redirected to home page -->
+  <script>
+    (function() {
+      if (typeof auth !== 'undefined') {
+        auth.onAuthStateChanged(function(user) {
+          if (!user) { window.location.replace('index.html'); }
+        });
+      }
+    })();
+  </script>
+
+  <script src="js/navbar.js"></script>
+  <script>
+
+    let currentUser    = null;
+    let userProfile    = null;
+    let selectedIcon   = '🚜';
+    let deleteDocId    = null;
+    let deleteColPath  = null;
+
+    // ── REQUIRE AUTH ──
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'login.html'; return; }
+      currentUser = user;
+      userProfile = await getUserProfile(user.uid);
+
+      // Sidebar
+      const initials = userProfile ? userProfile.name.slice(0,2).toUpperCase() : '👤';
+      document.getElementById('sidebarAvatar').textContent = initials;
+      document.getElementById('sidebarName').textContent   = userProfile ? userProfile.name : user.displayName || 'User';
+      document.getElementById('sidebarRole').textContent   = userProfile ? ('Role: ' + userProfile.role) : '';
+      document.getElementById('welcomeMsg').textContent    = `Welcome back, ${(userProfile?.name || 'Farmer').split(' ')[0]}!`;
+
+      // Profile tab
+      if (userProfile) {
+        document.getElementById('profileName').value     = userProfile.name || '';
+        document.getElementById('profileMobile').value   = userProfile.mobile || '';
+        document.getElementById('profileLocation').value = userProfile.location || '';
+      }
+      document.getElementById('profileEmail').value = user.email || '';
+
+      // Hide loader
+      const loader = document.getElementById('pageLoader');
+      loader.style.opacity = '0';
+      setTimeout(() => loader.style.display = 'none', 400);
+
+      loadDashboard();
+    });
+
+    // ── LOAD DATA ──
+    async function loadDashboard() {
+      const uid = currentUser.uid;
+
+      // Equipment I own
+      const equipSnap = await db.collection('equipment')
+        .where('ownerId', '==', uid).get();
+      const myEquip = equipSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+      // Bookings I made
+      const myBookSnap = await db.collection('bookings')
+        .where('renterId', '==', uid).get();
+      const myBookings = myBookSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+      // Bookings for my equipment
+      const incomingSnap = await db.collection('bookings')
+        .where('ownerId', '==', uid).get();
+      const incoming = incomingSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+      // Earnings
+      const earnings = incoming
+        .filter(b => b.status === 'completed')
+        .reduce((s, b) => s + (b.totalAmount || 0), 0);
+
+      // Stats
+      document.getElementById('statMyEquip').textContent   = myEquip.length;
+      document.getElementById('statMyBookings').textContent = myBookings.length;
+      document.getElementById('statIncoming').textContent  = incoming.filter(b => b.status === 'pending').length;
+      document.getElementById('statEarnings').textContent  = '₹' + earnings.toLocaleString();
+
+      // Render tabs
+      renderRecentBookings(myBookings.slice(0, 5));
+      renderMyEquipment(myEquip);
+      renderMyBookings(myBookings);
+      renderIncoming(incoming);
+
+      // Animations
+      const obs = new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('visible');
+      }), { threshold: 0.05 });
+      document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+    }
+
+    // ── RENDER RECENT BOOKINGS ──
+    function renderRecentBookings(bookings) {
+      document.getElementById('recentBookingsBody').innerHTML = bookings.length
+        ? bookings.map(b => `
+          <tr>
+            <td style="font-weight:600">${b.equipmentName || '—'}</td>
+            <td style="font-size:0.8rem;color:var(--text-muted)">${b.startDate} → ${b.endDate}</td>
+            <td style="font-weight:700;color:var(--primary)">₹${(b.totalAmount||0).toLocaleString()}</td>
+            <td><span class="badge badge-${statusColor(b.status)}" style="font-size:0.72rem">${b.status}</span></td>
+          </tr>`).join('')
+        : `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem">No bookings yet.</td></tr>`;
+    }
+
+    // ── RENDER MY EQUIPMENT ──
+    function renderMyEquipment(equip) {
+      const grid = document.getElementById('myEquipGrid');
+      if (!equip.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:3rem">
+          <div style="font-size:3rem;margin-bottom:1rem">🚜</div>
+          <p>You haven't listed any equipment yet.</p>
+          <button class="btn btn-primary" style="margin-top:1rem" onclick="openAddEquip()">Add Equipment</button>
+        </div>`; return;
+      }
+      grid.innerHTML = equip.map(e => `
+        <div class="equip-card" style="cursor:default">
+          <div class="equip-card-img" style="height:140px;font-size:3rem;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;position:relative">
+            ${e.icon || '🔧'}
+            <div style="position:absolute;top:8px;right:8px">
+              <span class="badge badge-${e.status === 'available' ? 'success' : 'warning'}" style="font-size:0.7rem">${e.status}</span>
+            </div>
+          </div>
+          <div class="equip-card-body" style="padding:1rem">
+            <div class="equip-card-title">${e.name}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px"><i class="fa fa-map-marker-alt" style="color:var(--primary)"></i> ${e.location}</div>
+            <div style="font-size:1rem;font-weight:800;color:var(--primary);margin-bottom:10px">₹${(e.priceHour||0).toLocaleString()}/hr</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" style="flex:1" onclick="toggleEquipStatus('${e.id}','${e.status}')">
+                ${e.status === 'available' ? '🔴 Mark Busy' : '🟢 Mark Available'}
+              </button>
+              <button class="action-btn delete" onclick="openDelete('equipment/${e.id}')">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    // ── RENDER MY BOOKINGS ──
+    function renderMyBookings(bookings) {
+      document.getElementById('myBookingsBody').innerHTML = bookings.length
+        ? bookings.map(b => `
+          <tr>
+            <td style="font-weight:600">${b.equipmentName || '—'}</td>
+            <td style="font-size:0.8rem">${b.startDate}</td>
+            <td style="font-size:0.8rem">${b.endDate}</td>
+            <td style="font-weight:700;color:var(--primary)">₹${(b.totalAmount||0).toLocaleString()}</td>
+            <td><span class="badge badge-${statusColor(b.status)}" style="font-size:0.72rem">${b.status}</span></td>
+            <td>
+              ${b.status === 'pending' ? `<button class="action-btn delete" title="Cancel" onclick="cancelBooking('${b.id}')"><i class="fa fa-times"></i></button>` : '—'}
+            </td>
+          </tr>`).join('')
+        : `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">You have no bookings yet. <a href="marketplace.html" style="color:var(--primary)">Browse marketplace</a></td></tr>`;
+    }
+
+    // ── RENDER INCOMING ──
+    function renderIncoming(bookings) {
+      document.getElementById('incomingBookingsBody').innerHTML = bookings.length
+        ? bookings.map(b => `
+          <tr>
+            <td style="font-weight:600">${b.renterName || '—'}</td>
+            <td>${b.equipmentName || '—'}</td>
+            <td style="font-size:0.8rem">${b.startDate} → ${b.endDate}</td>
+            <td style="font-weight:700;color:var(--primary)">₹${(b.totalAmount||0).toLocaleString()}</td>
+            <td><span class="badge badge-${statusColor(b.status)}" style="font-size:0.72rem">${b.status}</span></td>
+            <td>
+              ${b.status === 'pending' ? `
+                <div class="action-btns">
+                  <button class="action-btn view" title="Approve" onclick="updateBookingStatus('${b.id}','confirmed')"><i class="fa fa-check"></i></button>
+                  <button class="action-btn delete" title="Reject" onclick="updateBookingStatus('${b.id}','cancelled')"><i class="fa fa-times"></i></button>
+                </div>` : '—'}
+              ${b.status === 'confirmed' ? `<button class="btn btn-ghost btn-sm" onclick="updateBookingStatus('${b.id}','completed')">Mark Done</button>` : ''}
+            </td>
+          </tr>`).join('')
+        : `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">No incoming requests yet.</td></tr>`;
+    }
+
+    // ── TAB SWITCH ──
+    function switchTab(tab, el) {
+      ['overview','myEquipment','myBookings','incomingBookings','profile'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+      });
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    // ── ADD EQUIPMENT MODAL ──
+    function openAddEquip() { document.getElementById('addEquipModal').classList.add('open'); }
+    function closeAddEquip() { document.getElementById('addEquipModal').classList.remove('open'); }
+
+    function pickIcon(el) {
+      document.querySelectorAll('.icon-opt').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedIcon = el.dataset.icon;
+    }
+
+    async function saveEquipment() {
+      const name     = document.getElementById('equipName').value.trim();
+      const price    = parseFloat(document.getElementById('equipPrice').value);
+      const location = document.getElementById('equipLocation').value.trim();
+      const category = document.getElementById('equipCategory').value;
+      const desc     = document.getElementById('equipDesc').value.trim();
+
+      // Validation
+      let valid = true;
+      if (!name)        { showFieldError('equipNameError',  'Name required.');     valid = false; }
+      if (!price || price <= 0) { showFieldError('equipPriceError', 'Valid price required.'); valid = false; }
+      if (!location)    { showFieldError('equipLocError',   'Location required.'); valid = false; }
+      if (!valid) return;
+
+      const btn = document.getElementById('saveEquipBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Saving…';
+
+      try {
+        await db.collection('equipment').add({
+          name, category, icon: selectedIcon,
+          priceHour: price, location, description: desc,
+          ownerName: userProfile ? userProfile.name : currentUser.displayName || 'Owner',
+          ownerId:   currentUser.uid,
+          status:    'available',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        closeAddEquip();
+        showToast('Equipment added!');
+        loadDashboard();
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to add equipment.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Save Equipment';
+      }
+    }
+
+    function showFieldError(id, msg) {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = msg; el.classList.add('show'); }
+    }
+
+    // ── TOGGLE EQUIPMENT STATUS ──
+    async function toggleEquipStatus(id, currentStatus) {
+      const newStatus = currentStatus === 'available' ? 'busy' : 'available';
+      try {
+        await db.collection('equipment').doc(id).update({ status: newStatus });
+        showToast(`Marked as ${newStatus}`);
+        loadDashboard();
+      } catch (err) { showToast('Update failed.', 'error'); }
+    }
+
+    // ── UPDATE BOOKING STATUS ──
+    async function updateBookingStatus(id, status) {
+      try {
+        await db.collection('bookings').doc(id).update({ status });
+        showToast(`Booking ${status}!`);
+        loadDashboard();
+      } catch (err) { showToast('Update failed.', 'error'); }
+    }
+
+    // ── CANCEL BOOKING ──
+    async function cancelBooking(id) {
+      if (!confirm('Cancel this booking?')) return;
+      await updateBookingStatus(id, 'cancelled');
+    }
+
+    // ── DELETE ──
+    function openDelete(path) { deleteColPath = path; document.getElementById('deleteModal').classList.add('open'); }
+    function closeDelete() { deleteColPath = null; document.getElementById('deleteModal').classList.remove('open'); }
+    async function confirmDelete() {
+      if (!deleteColPath) return;
+      try {
+        const parts = deleteColPath.split('/');
+        await db.collection(parts[0]).doc(parts[1]).delete();
+        showToast('Deleted successfully.');
+        closeDelete();
+        loadDashboard();
+      } catch (err) { showToast('Delete failed.', 'error'); }
+    }
+
+    // ── SAVE PROFILE ──
+    async function saveProfile() {
+      const name     = document.getElementById('profileName').value.trim();
+      const mobile   = document.getElementById('profileMobile').value.trim();
+      const location = document.getElementById('profileLocation').value.trim();
+      if (!name) { showToast('Name cannot be empty.', 'error'); return; }
+      try {
+        await db.collection('users').doc(currentUser.uid).update({ name, mobile, location });
+        await currentUser.updateProfile({ displayName: name });
+        showToast('Profile updated!');
+        userProfile = { ...userProfile, name, mobile, location };
+        document.getElementById('sidebarName').textContent = name;
+        document.getElementById('sidebarAvatar').textContent = name.slice(0,2).toUpperCase();
+      } catch (err) { showToast('Update failed.', 'error'); }
+    }
+
+    // ── HELPERS ──
+    function statusColor(s) {
+      return s === 'completed' ? 'success' : s === 'confirmed' ? 'info' : s === 'pending' ? 'warning' : 'danger';
+    }
+  </script>
+</body>
+</html>

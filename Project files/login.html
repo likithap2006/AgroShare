@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login – AgroShare</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { padding-top: var(--navbar-height); background: var(--bg-main); }
+
+    .auth-page {
+      min-height: calc(100vh - var(--navbar-height));
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      padding: 2.5rem;
+      width: 100%; max-width: 440px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-logo {
+      text-align: center; margin-bottom: 1.75rem;
+    }
+    .auth-logo .logo-icon {
+      font-size: 3rem; display: block; margin-bottom: 4px;
+    }
+    .auth-title { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; text-align:center; }
+    .auth-sub   { font-size: 0.88rem; color: var(--text-muted); text-align:center; margin-bottom: 2rem; }
+
+    .forgot-link {
+      font-size: 0.82rem; color: var(--primary);
+      font-weight: 600; cursor: pointer;
+      text-align: right; display: block; margin-top: -0.5rem; margin-bottom: 1.25rem;
+    }
+    .forgot-link:hover { text-decoration: underline; }
+
+    .auth-footer {
+      text-align: center; margin-top: 1.5rem;
+      font-size: 0.88rem; color: var(--text-muted);
+    }
+    .auth-footer a { color: var(--primary); font-weight: 600; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Forgot password panel */
+    #forgotPanel { display: none; }
+    #loginPanel  { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="navbar-logo"><span>🌾</span> AgroShare</a>
+    <ul class="navbar-links">
+      <li><a href="index.html">Home</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="marketplace.html">Marketplace</a></li>
+    </ul>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle"><i class="fa fa-moon" id="themeIcon"></i></button>
+    </div>
+  </nav>
+
+  <!-- AUTH PAGE -->
+  <div class="auth-page">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <span class="logo-icon">🌾</span>
+      </div>
+
+      <!-- ══ LOGIN PANEL ══ -->
+      <div id="loginPanel">
+        <div class="auth-title">Welcome Back</div>
+        <p class="auth-sub">Sign in to your AgroShare account</p>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <div class="input-wrap">
+            <i class="fa fa-envelope"></i>
+            <input type="email" id="loginEmail" class="form-input"
+              placeholder="you@example.com" autocomplete="email" />
+          </div>
+          <span class="form-error" id="emailError"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <i class="fa fa-lock"></i>
+            <input type="password" id="loginPassword" class="form-input"
+              placeholder="••••••••" autocomplete="current-password" />
+            <button class="pass-toggle" type="button" onclick="togglePass('loginPassword', this)">
+              <i class="fa fa-eye"></i>
+            </button>
+          </div>
+          <span class="form-error" id="passError"></span>
+        </div>
+
+        <a class="forgot-link" onclick="showForgot()">Forgot password?</a>
+
+        <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">
+          Sign In
+        </button>
+
+        <div class="auth-footer" style="margin-top:1.25rem">
+          Don't have an account? <a href="register.html">Create one</a>
+        </div>
+      </div>
+
+      <!-- ══ FORGOT PASSWORD PANEL ══ -->
+      <div id="forgotPanel">
+        <div class="auth-title" style="text-align:left">Reset Password</div>
+        <p class="auth-sub" style="text-align:left">
+          Enter your registered email. We'll send you a password reset link.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <div class="input-wrap">
+            <i class="fa fa-envelope"></i>
+            <input type="email" id="resetEmail" class="form-input"
+              placeholder="you@example.com" />
+          </div>
+          <span class="form-error" id="resetEmailError"></span>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="resetBtn" onclick="doPasswordReset()">
+          Send Reset Link
+        </button>
+
+        <div class="auth-footer" style="margin-top:1rem">
+          <a onclick="showLogin()" style="cursor:pointer">
+            <i class="fa fa-arrow-left"></i> Back to Login
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/navbar.js"></script>
+  <script>
+
+    // ── Redirect if already logged in ──
+    auth.onAuthStateChanged(user => {
+      if (user) window.location.href = 'owner-dashboard.html';
+    });
+
+    // ── Toggle password visibility ──
+    function togglePass(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const isText = input.type === 'text';
+      input.type = isText ? 'password' : 'text';
+      btn.querySelector('i').className = isText ? 'fa fa-eye' : 'fa fa-eye-slash';
+    }
+
+    // ── Show / Hide panels ──
+    function showForgot() {
+      document.getElementById('loginPanel').style.display  = 'none';
+      document.getElementById('forgotPanel').style.display = 'block';
+    }
+    function showLogin() {
+      document.getElementById('forgotPanel').style.display = 'none';
+      document.getElementById('loginPanel').style.display  = 'block';
+    }
+
+    // ── Validate ──
+    function clearErrors() {
+      ['emailError','passError','resetEmailError'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.classList.remove('show'); }
+      });
+    }
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = msg; el.classList.add('show'); }
+    }
+
+    // ── Login ──
+    async function doLogin() {
+      clearErrors();
+      const email    = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn      = document.getElementById('loginBtn');
+
+      let valid = true;
+      if (!email)    { showError('emailError', 'Email is required.'); valid = false; }
+      if (!password) { showError('passError',  'Password is required.'); valid = false; }
+      if (!valid) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+
+        // Fetch role from Firestore
+        const profile = await getUserProfile(cred.user.uid);
+        const role    = profile ? profile.role : 'renter';
+
+        showToast('Welcome back! Redirecting…');
+
+        setTimeout(() => {
+          if (role === 'admin') window.location.href = 'admin.html';
+          else window.location.href = 'owner-dashboard.html';
+        }, 800);
+
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = 'Sign In';
+
+        const msg = firebaseErrorMsg(err.code);
+        showError('passError', msg);
+      }
+    }
+
+    // ── Password Reset (Email link – NO OTP for normal login) ──
+    async function doPasswordReset() {
+      clearErrors();
+      const email = document.getElementById('resetEmail').value.trim();
+      const btn   = document.getElementById('resetBtn');
+
+      if (!email) { showError('resetEmailError', 'Please enter your email.'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Sending…';
+
+      try {
+        await auth.sendPasswordResetEmail(email);
+        showToast('Reset link sent! Check your inbox.');
+        btn.innerHTML = '✅ Email Sent';
+        setTimeout(showLogin, 2500);
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = 'Send Reset Link';
+        showError('resetEmailError', firebaseErrorMsg(err.code));
+      }
+    }
+
+    // ── Enter key submit ──
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        if (document.getElementById('forgotPanel').style.display === 'block') doPasswordReset();
+        else doLogin();
+      }
+    });
+
+    // ── Firebase error messages ──
+    function firebaseErrorMsg(code) {
+      const map = {
+        'auth/user-not-found':       'No account found with this email.',
+        'auth/wrong-password':       'Incorrect password. Try again.',
+        'auth/invalid-email':        'Please enter a valid email address.',
+        'auth/too-many-requests':    'Too many attempts. Try again later.',
+        'auth/user-disabled':        'This account has been disabled.',
+        'auth/invalid-credential':   'Invalid email or password.',
+        'auth/network-request-failed':'Network error. Check your connection.',
+      };
+      return map[code] || 'Something went wrong. Please try again.';
+    }
+  </script>
+</body>
+</html>

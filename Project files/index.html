@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgroShare – Farm Equipment Rental Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { padding-top: 0; }
+
+    /* Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .feature-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; }
+    .feature-desc  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* Equipment preview */
+    .equip-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    /* CTA */
+    .cta-section {
+      background: var(--gradient-hero);
+      color: white; text-align: center;
+      padding: 5rem 0;
+    }
+    .cta-title { font-size: 2.2rem; font-weight: 800; margin-bottom: 1rem; }
+    .cta-sub   { font-size: 1rem; opacity: 0.85; margin-bottom: 2rem; }
+
+    /* Footer */
+    footer {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      padding: 2rem 0; text-align: center;
+      color: var(--text-muted); font-size: 0.85rem;
+    }
+
+    @media (max-width: 900px) {
+      .features-grid, .equip-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 580px) {
+      .features-grid, .equip-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE LOADER -->
+  <div class="page-loader" id="pageLoader">
+    <div class="loader-spinner"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="navbar-logo"><span>🌾</span> AgroShare</a>
+    <ul class="navbar-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="marketplace.html">Marketplace</a></li>
+      <li class="nav-auth-only" style="display:none"><a href="owner-dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle"><i class="fa fa-moon" id="themeIcon"></i></button>
+      <span id="navUserName"></span>
+      <a href="login.html" class="btn btn-secondary btn-sm hide-mobile" id="navLoginLink">Login</a>
+      <button class="btn btn-ghost btn-sm" id="navLogoutBtn" style="display:none">
+        <i class="fa fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-title fade-up">
+        🌾 Rent Farm Equipment<br>From Your Neighbors
+      </div>
+      <p class="hero-sub fade-up stagger-1">
+        AgroShare connects farmers who need equipment with owners nearby.
+        Save money, increase utilization, grow together.
+      </p>
+      <div class="hero-actions fade-up stagger-2">
+        <button class="btn btn-primary btn-lg" onclick="goToMarketplace()">
+          <i class="fa fa-search"></i> Browse Equipment
+        </button>
+        <a href="register.html" class="btn btn-secondary btn-lg"
+           style="background:rgba(255,255,255,0.15);color:white;border-color:rgba(255,255,255,0.3)">
+          <i class="fa fa-user-plus"></i> List Your Equipment
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align:center">
+        <div class="section-title fade-up">Why AgroShare?</div>
+        <p class="section-sub fade-up stagger-1">Everything you need to rent or lend agricultural equipment</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card fade-up stagger-1">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-title">Verified Farmers</div>
+          <p class="feature-desc">All users are verified through mobile authentication for safe transactions.</p>
+        </div>
+        <div class="feature-card fade-up stagger-2">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Instant Booking</div>
+          <p class="feature-desc">Book equipment in minutes. No paperwork, no waiting.</p>
+        </div>
+        <div class="feature-card fade-up stagger-3">
+          <div class="feature-icon">💰</div>
+          <div class="feature-title">Best Prices</div>
+          <p class="feature-desc">Compare prices from multiple owners. Always get the best deal.</p>
+        </div>
+        <div class="feature-card fade-up stagger-4">
+          <div class="feature-icon">📍</div>
+          <div class="feature-title">Near You</div>
+          <p class="feature-desc">Find equipment within your village or district. Reduce travel costs.</p>
+        </div>
+        <div class="feature-card fade-up stagger-5">
+          <div class="feature-icon">⭐</div>
+          <div class="feature-title">Trusted Reviews</div>
+          <p class="feature-desc">Read reviews from fellow farmers before you book.</p>
+        </div>
+        <div class="feature-card fade-up stagger-6">
+          <div class="feature-icon">📱</div>
+          <div class="feature-title">Easy Management</div>
+          <p class="feature-desc">Track bookings and earnings from your dashboard anytime.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED EQUIPMENT -->
+  <section class="section" style="background:var(--bg-hover)">
+    <div class="container">
+      <div style="text-align:center">
+        <div class="section-title fade-up">Featured Equipment</div>
+        <p class="section-sub fade-up stagger-1">Popular equipment available for rent right now</p>
+      </div>
+      <div class="equip-grid" id="featuredEquipGrid">
+        <!-- Loaded from Firestore -->
+      </div>
+      <div style="text-align:center;margin-top:2.5rem">
+        <a href="marketplace.html" class="btn btn-primary btn-lg fade-up">
+          View All Equipment <i class="fa fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-title fade-up">Ready to Start Earning?</div>
+      <p class="cta-sub fade-up stagger-1">List your tractor, harvester, or pump and start earning today</p>
+      <a href="register.html" class="btn btn-primary btn-lg fade-up stagger-2">
+        <i class="fa fa-tractor"></i> List My Equipment
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <p>🌾 <strong>AgroShare</strong> — Empowering Farmers Together</p>
+      <p style="margin-top:6px">© 2024 AgroShare. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/navbar.js"></script>
+  <script>
+    // ── PAGE LOADER ──
+    window.addEventListener('load', function() {
+      const loader = document.getElementById('pageLoader');
+      loader.style.opacity = '0';
+      setTimeout(() => { loader.style.display = 'none'; initHome(); }, 500);
+    });
+
+    // ── INTERSECTION OBSERVER ──
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // ── LOAD FEATURED EQUIPMENT ──
+    async function initHome() {
+      try {
+        const snap = await db.collection('equipment')
+          .where('status', '==', 'available')
+          .limit(6).get();
+
+        const grid = document.getElementById('featuredEquipGrid');
+
+        if (snap.empty) {
+          // Show demo cards if no data yet
+          const demos = [
+            { icon:'🚜', name:'Mahindra 575 DI Tractor', ownerName:'Priya K.', location:'Pune, MH', priceHour:800 },
+            { icon:'🌾', name:'John Deere Harvester',    ownerName:'Arun P.',   location:'Nashik, MH', priceHour:2500 },
+            { icon:'🚁', name:'DJI Agras T30 Drone',     ownerName:'Mohan L.',  location:'Nagpur, MH', priceHour:1200 },
+          ];
+          grid.innerHTML = demos.map(e => equipCard(e)).join('');
+        } else {
+          grid.innerHTML = snap.docs.map(doc => equipCard({ id: doc.id, ...doc.data() })).join('');
+        }
+
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+      } catch (err) {
+        console.warn('Could not load equipment:', err.message);
+      }
+    }
+
+    function equipCard(e) {
+      return `
+        <div class="equip-card fade-up" onclick="goToMarketplace()" style="cursor:pointer">
+          <div class="equip-card-img">${e.icon || '🔧'}</div>
+          <div class="equip-card-body">
+            <div class="equip-card-title">${e.name}</div>
+            <div class="equip-card-owner">👤 ${e.ownerName || 'Owner'}</div>
+            <div class="equip-card-meta">
+              <span class="equip-card-price">₹${(e.priceHour||0).toLocaleString()}/hr</span>
+              <span class="equip-card-loc"><i class="fa fa-map-marker-alt" style="color:var(--primary)"></i> ${e.location || '—'}</span>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="event.stopPropagation();goToMarketplace()">Book Now</button>
+          </div>
+        </div>`;
+    }
+
+    // ── Auth-aware navigation ──
+    function goToMarketplace() {
+      const user = typeof auth !== 'undefined' ? auth.currentUser : null;
+      if (user) {
+        window.location.href = 'marketplace.html';
+      } else {
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+</body>
+</html>
